@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Космическая добыча</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background: #0b0e14; color: white; text-align: center; font-family: sans-serif; margin: 0; overflow: hidden; }
+        #stats { position: absolute; top: 10px; left: 10px; text-align: left; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; }
+        
+        /* Главный объект игры */
+        #target { font-size: 60px; position: absolute; cursor: pointer; transition: 0.2s; user-select: none; }
+        
+        /* Кнопка магазина */
+        #shop-btn { position: absolute; top: 10px; right: 10px; background: #f1c40f; border: none; padding: 10px; border-radius: 5px; font-weight: bold; }
+        
+        /* Окно магазина */
+        #shop-ui { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1c2533; padding: 20px; border-radius: 20px; border: 2px solid #f1c40f; z-index: 100; width: 80%; }
+        .skin-item { display: inline-block; margin: 10px; padding: 10px; border: 1px solid #555; border-radius: 10px; cursor: pointer; }
+        .skin-item.active { border-color: #f1c40f; background: #2c3e50; }
+        #close-shop { margin-top: 20px; background: #e74c3c; border: none; color: white; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="stats">
+        <div>Монеты: <span id="coins">0</span> 💰</div>
+    </div>
+
+    <button id="shop-btn" onclick="toggleShop(true)">МАГАЗИН 🛒</button>
+
+    <div id="target">☄️</div>
+
+    <div id="shop-ui">
+        <h2>Магазин скинов</h2>
+        <div class="skin-item" onclick="buySkin('☄️', 0)" id="skin1">☄️<br>0 💰</div>
+        <div class="skin-item" onclick="buySkin('🚀', 50)" id="skin2">🚀<br>50 💰</div>
+        <div class="skin-item" onclick="buySkin('🛸', 150)" id="skin3">🛸<br>150 💰</div>
+        <div class="skin-item" onclick="buySkin('⭐', 300)" id="skin4">⭐<br>300 💰</div>
+        <br>
+        <button id="close-shop" onclick="toggleShop(false)">ЗАКРЫТЬ</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        let coins = parseInt(localStorage.getItem('coins')) || 0;
+        let currentSkin = localStorage.getItem('skin') || '☄️';
+        let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins')) || ['☄️'];
+
+        const target = document.getElementById('target');
+        const coinsDisplay = document.getElementById('coins');
+
+        function updateUI() {
+            coinsDisplay.innerText = coins;
+            target.innerText = currentSkin;
+            // Подсветка купленных скинов
+            ownedSkins.forEach(s => {
+                // Тут можно добавить визуальную отметку "Куплено"
+            });
+        }
+
+        function moveTarget() {
+            const x = Math.random() * (window.innerWidth - 80);
+            const y = Math.random() * (window.innerHeight - 150) + 70;
+            target.style.left = x + 'px';
+            target.style.top = y + 'px';
+        }
+
+        target.addEventListener('click', () => {
+            coins += 1; // За каждый клик 1 монета
+            localStorage.setItem('coins', coins);
+            updateUI();
+            moveTarget();
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        });
+
+        function toggleShop(show) {
+            document.getElementById('shop-ui').style.display = show ? 'block' : 'none';
+        }
+
+        function buySkin(skin, price) {
+            if (ownedSkins.includes(skin)) {
+                currentSkin = skin;
+                localStorage.setItem('skin', skin);
+                tg.showAlert("Скин выбран!");
+            } else {
+                if (coins >= price) {
+                    coins -= price;
+                    ownedSkins.push(skin);
+                    currentSkin = skin;
+                    localStorage.setItem('coins', coins);
+                    localStorage.setItem('skin', skin);
+                    localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
+                    tg.showAlert("Поздравляем с покупкой!");
+                } else {
+                    tg.showAlert("Недостаточно монет! Нужно еще " + (price - coins));
+                }
+            }
+            updateUI();
+            toggleShop(false);
+        }
+
+        setInterval(moveTarget, 1500); // Цель прыгает сама каждые 1.5 сек
+        updateUI();
+        moveTarget();
+    </script>
+</body>
+</html>
